@@ -345,10 +345,15 @@ paste `find ${out_dir_align} -name *.ReadsPerGene.out.formatted.tsv` | \
     > ${out_dir_quantification}/star.ReadsPerGene.out.formatted.merged.tsv && printf "***Gene count table merged***\n"
 
 # prepare gene annotation bed file using reference GTF file. note: bed file is 0-based, so chr end +1
-cat ${gtf_file} | grep -P '\tgene\t' | awk 'BEGIN{FS="[\t; ]"; OFS="\t"; printf "chromosome\tstart\tend\tensembl_id\tstrand\thgnc_symbol\tgene_biotype\n"} {gsub(/"/,"",$10); gsub(/"/,"",$16); gsub(/"/,"",$22); print $1,$4,$5+1,$10,$7,$16,$22}' > ${out_dir_quantification}/${gtf_file%"gtf"}gene.annot.bed
+cat ${gtf_file} | grep -P '\tgene\t' | \
+    awk 'BEGIN{FS="[\t; ]"; OFS="\t"; printf "chromosome\tstart\tend\tensembl_id\tstrand\thgnc_symbol\tgene_biotype\n"} \
+              {gsub(/"/,"",$10); gsub(/"/,"",$16); gsub(/"/,"",$22); print $1,$4,$5+1,$10,$7,$16,$22}' > \
+              ${out_dir_quantification}/${gtf_file%"gtf"}gene.annot.bed
 
-# count2TPM
-${BASEDIR}/py/count2TPM.py -c ${out_dir_quantification}/star.ReadsPerGene.out.formatted.merged.tsv -l ${BASEDIR}/data/Mus_musculus.GRCm38.97.gene.withexonlength.bed -o ${out_dir_quantification}/gene.TPM.tsv && printf "***count to TPM done***\n"
+# count2TPM, this rscript is only used internally in this pipeline
+Rscript ./r/exon.length.per.gene.R ${gtf_file} ${out_dir_quantification}/${gtf_file%"gtf"}gene.annot.bed ${out_dir_quantification}/star.ReadsPerGene.out.formatted.merged.tsv ${out_dir_quantification}/gene.tpm.tsv
+
+#${BASEDIR}/py/count2TPM.py -c ${out_dir_quantification}/star.ReadsPerGene.out.formatted.merged.tsv -l ${BASEDIR}/data/Mus_musculus.GRCm38.97.gene.withexonlength.bed -o ${out_dir_quantification}/gene.TPM.tsv && printf "***count to TPM done***\n"
 
 
 

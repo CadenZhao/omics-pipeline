@@ -27,6 +27,7 @@ options <- commandArgs(trailingOnly = TRUE)
 gtf.file <- options[1]    # the first position argument is reference GTF file
 annot.file <- options[2]    # the second position argument is gene annoattion file extracting from GTF file by shell cmd in pipeline
 count.file<- options[3]    # the third position argument is gene counts file
+out.file.path <- options[4]    # the fourth position argument is the path of output TPM file
 
 ###############################prepare exon length per gene###############################
 
@@ -66,5 +67,5 @@ df <- df[, -c(8,10)]
 df.tpm <- round(sapply(df[,c(9:dim(df)[2])], function(vec_count) {count2TPM(vec_count, vec_length=df$exon_length)}), 3)
 df <- cbind(df[,1:8], df.tpm)
 
-write.table(df, "gene.tpm.tsv", quote = F, sep = '\t', row.names = F)
+write.table(df, out.file.path, quote = F, sep = '\t', row.names = F)
 
