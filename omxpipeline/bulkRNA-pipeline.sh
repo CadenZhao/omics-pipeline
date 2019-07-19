@@ -351,12 +351,10 @@ cat ${gtf_file} | grep -P '\tgene\t' | \
               ${out_dir_quantification}/${gtf_file%"gtf"}gene.annot.bed
 
 # count2TPM, this rscript is only used internally in this pipeline
-Rscript ./r/exon.length.per.gene.R ${gtf_file} ${out_dir_quantification}/${gtf_file%"gtf"}gene.annot.bed ${out_dir_quantification}/star.ReadsPerGene.out.formatted.merged.tsv ${out_dir_quantification}/gene.tpm.tsv
+Rscript ${BASEDIR}/r/exon.length.per.gene.R ${gtf_file} ${out_dir_quantification}/${gtf_file%"gtf"}gene.annot.bed ${out_dir_quantification}/star.ReadsPerGene.out.formatted.merged.tsv ${out_dir_quantification}/gene.tpm.tsv && printf "***count to TPM done***\n"
+
 
 #${BASEDIR}/py/count2TPM.py -c ${out_dir_quantification}/star.ReadsPerGene.out.formatted.merged.tsv -l ${BASEDIR}/data/Mus_musculus.GRCm38.97.gene.withexonlength.bed -o ${out_dir_quantification}/gene.TPM.tsv && printf "***count to TPM done***\n"
-
-
-
 
 
 ############################################BAM2BigWig#############################

@@ -32,8 +32,8 @@ out.file.path <- options[4]    # the fourth position argument is the path of out
 ###############################prepare exon length per gene###############################
 
 suppressWarnings(suppressMessages(library("GenomicFeatures")))
-#library("GenomicFeatures")
 
+print("***Compute total exon length per gene***")
 # import GTF file: return TxDb object
 txdb <- makeTxDbFromGFF(gtf.file, format="gtf")
 
@@ -48,10 +48,12 @@ df_len <- as.data.frame(unlist(list.exon.len.per.gene))
 df_len$ensembl_id <- rownames(df_len)
 df_len <- df_len[,c(2,1)]
 colnames(df_len)[2] <- "exon_length"
+print("done")
 
 
 ##########################################count2TPM#######################################
 
+print("***Computing TPM***")
 # read and sort (by gene ID) annot and count file
 df_annot <- read.table(file = annot.file, sep='\t', header = T)
 df_annot <- df_annot[order(df_annot$ensembl_id), ]
