@@ -171,7 +171,7 @@ do
     esac
 done
 
-printf "Running parameters: $0 $*\n"
+printf "Running parameters: $0 $*\n\n"
 
 
 ################################################exception test############################################
