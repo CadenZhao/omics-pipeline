@@ -9,19 +9,20 @@
 ## Usage:
 ```
 git clone https://github.com/CadenZhao/omics-pipeline.git
-cd omics-pipeline/pipeline
-chmod 755 ./*
+cd omics-pipeline/omxpipeline
 
 # use -h flag to check the usage
 ./SRAdownload-pipeline.sh -h
 ./bulkRNA-pipeline.sh -h
-./blabla-pipeline.sh -h
+./<pipeline name>.sh -h
 ```
 
 ## Pipeline description
 ### 1. SRAdownload-pipeline.sh
-download fastq file directly
-requirements: sra-toolkit, SraRunTable.txt downloaded from SRA database
+easily download fastq file from SRA database 
+requirements: 
+1. sra-toolkit (should include fasterq-dump) 
+2. SraRunTable.txt (downloaded from SRA database) 
 
 ### 2. bulkRNA-pipeline.sh
 QC, alignment, gene count, gene TPM, BAM to BigWig
@@ -31,8 +32,7 @@ fastqc
 multiqc  
 STAR  
 samtools  
-python (with pandas library)  
-R (with blabla library)  
+R (with GenomicFeatures package) 
 
 ### 3. scRNA-pipeline.sh
 working on...
