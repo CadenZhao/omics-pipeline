@@ -48,11 +48,18 @@ fi
 
 ################################################Arguments############################################
 
-# 设置默认参数 
+# set default parameters 
 thread=8
 read_max_length=100
 
-# 传参
+# set default softwares, not echo message if not exit
+trimmomatic=`which trimmomatic 2> /dev/null`
+fastqc=`which fastqc 2> /dev/null`
+multiqc=`which multiqc 2> /dev/null`
+STAR=`which STAR 2> /dev/null`
+samtools=`which samtools 2> /dev/null`
+
+# parse arguments
 while getopts "hg:G:a:i:o:t:d:@:l:T:q:Q:s:S:" opt
 do
     case $opt in
@@ -68,7 +75,7 @@ do
             ;;
         a)
             gtf_file=$OPTARG
-            if [ ! -f ${gtf_file} ]; then
+            if [ ! -f "${gtf_file}" ]; then
                 printf "ERROR! No such file: ${gtf_file}\n"
                 helpdoc
                 exit 1
@@ -76,7 +83,7 @@ do
             ;;
         i)
             fastq_dir=${OPTARG%"/"}
-            if [ ! -d ${fastq_dir} ]; then
+            if [ ! -d "${fastq_dir}" ]; then
                 printf "ERROR! No such directory: ${fastq_dir}\n"
                 helpdoc
                 exit 1
@@ -84,7 +91,7 @@ do
             ;;
         o)
             out_dir=${OPTARG%"/"}
-            if [ ! -d ${out_dir} ]; then
+            if [ ! -d "${out_dir}" ]; then
                 printf "ERROR! No such directory: ${out_dir}\n"
                 helpdoc
                 exit 1
@@ -100,7 +107,7 @@ do
             ;;
         d)
             adaptor_dir=${OPTARG%"/"}
-            if [ ! -d ${adaptor_dir} ]; then
+            if [ ! -d "${adaptor_dir}" ]; then
                 printf "ERROR! No such directory: ${adaptor_dir}\n"
                 helpdoc
                 exit 1
@@ -124,7 +131,7 @@ do
             ;;
         T)
             trimmomatic=$OPTARG
-            if [ ! -f ${trimmomatic} ]; then
+            if [ ! -f "${trimmomatic}" ]; then
                 printf "ERROR! Wrong trimmomatic path: ${trimmomatic}\n"
                 helpdoc
                 exit 1
@@ -133,7 +140,7 @@ do
 
         q)
             fastqc=$OPTARG
-            if [ ! -f ${fastqc} ]; then
+            if [ ! -f "${fastqc}" ]; then
                 printf "ERROR! Wrong fastqc path: ${fastqc}\n"
                 helpdoc
                 exit 1
@@ -141,7 +148,7 @@ do
             ;;
         Q)
             multiqc=$OPTARG
-            if [ ! -f ${multiqc} ]; then
+            if [ ! -f "${multiqc}" ]; then
                 printf "ERROR! Wrong multiqc path: ${multiqc}\n"
                 helpdoc
                 exit 1
@@ -149,7 +156,7 @@ do
             ;;
         s)
             STAR=$OPTARG
-            if [ ! -f ${STAR} ]; then
+            if [ ! -f "${STAR}" ]; then
                 printf "ERROR! Wrong STAR path: ${STAR}\n"
                 helpdoc
                 exit 1
@@ -157,7 +164,7 @@ do
             ;;
         s)
             samtools=$OPTARG
-            if [ ! -f ${samtools} ]; then
+            if [ ! -f "${samtools}" ]; then
                 printf "ERROR! Wrong samtools path: ${samtools}\n"
                 helpdoc
                 exit 1
@@ -177,15 +184,23 @@ printf "Running parameters: $0 $*\n\n"
 ################################################exception test############################################
 
 # 检查必须参数是否传参了，少任何一个退出
-if [ "${gtf_file}" == "" ] || [ "${fastq_dir}" == "" ] || [ "${out_dir}" == "" ] || [ "${type_of_lib}" == "" ]; then
-    printf "ERROR: -a, -i, -o and -t are required.  Please fill them all\n"
+if [ "${gtf_file}" == "" ] || [ "${fastq_dir}" == "" ] || [ "${out_dir}" == "" ] || [ "${type_of_lib}" == "" ] || [ "${adaptor_dir}" == "" ]; then
+    printf "ERROR: -a, -i, -o, -t and -d are required.  Please fill them all\n"
     helpdoc
     exit 1
 fi
 
+# software requirements
+printf "***Testing software requirements***\n"
+[ -f "${trimmomatic}" ] && printf "trimmomatic checked, using: ${trimmomatic}\n" || { printf "\'trimmomatic\' is not found in either defualt environment or user-defined parameter\n"; exit 1; }
+[ -f "${fastqc}" ] && printf "fastqc checked, using: ${fastqc}\n" || { printf "\'fastqc\' is not found in either defualt environment or user-defined parameter\n"; exit 1; }
+[ -f "${multiqc}" ] && printf "multiqc checked, using: ${multiqc}\n" || { printf "\'multiqc\' is not found in either defualt environment or user-defined parameter\n"; exit 1; }
+[ -f "${STAR}" ] && printf "STAR checked, using: ${STAR}\n" || { printf "\'STAR\' is not found in either defualt environment or user-defined parameter\n"; exit 1; }
+[ -f "${samtools}" ] && printf "samtools checked, using: ${samtools}\n" || { printf "\'samtools\' is not found in either defualt environment or user-defined parameter\n"; exit 1; }
+
 # 检查-g和-G的传参情况，如果-g对了的话直接过, 填了但是没填对退出，没填的话再检查-G，用-G来建index 
 if [ "${genome_index_dir}" != "" ]; then
-    if [ -d ${genome_index_dir} ]; then
+    if [ -d "${genome_index_dir}" ]; then
         printf "Using STAR index (-g) to perform alignment.  Genome reference fasta file (-G) will be omitted.\n"
     else
         printf "ERROR: STAR index directory not found: \'${genome_index_dir}\'.  Please set a right STAR index path\n"
@@ -197,7 +212,7 @@ else
         printf "ERROR: -g or -G must be set.  Please set at least one\n"
         helpdoc
         exit 1
-    elif [ ! -f ${genome_fasta} ]; then
+    elif [ ! -f "${genome_fasta}" ]; then
         printf "ERROR: unknown file: \'${genome_fasta}\'\n"
         helpdoc
         exit 1
@@ -231,29 +246,30 @@ out_dir_multiqc_star=${out_dir}/qc/multiqc/star_report
 out_dir_quantification=${out_dir}/quantification
 
 # get unique sample ID from input fastq directory.  Prefix is name before .fasta.gz for SE, before _1.fastq.gz or _2.fastq.gz for PE 
-if [ ${type_of_lib} == "SE" ]; then
+if [ "${type_of_lib}" == "SE" ]; then
     sample_prefix_list=`find ${fastq_dir} -type f -name "*.fastq.gz" | awk '{gsub(/\.fastq\.gz$/, "", $1); print $1}'` && printf "***Performing Single End pipeline...***\n"
 else
-    sample_prefix_list=`find ${fastq_dir} -type f -name "*_1.fastq.gz" | awk '{gsub(/\.fastq\.gz$/, "", $1); print $1}'` && printf "***Performing Paired End pipeline...***\n"
+    sample_prefix_list=`find ${fastq_dir} -type f -name "*_1.fastq.gz" | awk '{gsub(/_1\.fastq\.gz$/, "", $1); print $1}'` && printf "***Performing Paired End pipeline...***\n"
 fi
+
+n_sample=`echo ${sample_prefix_list} | wc -w`
 
 
 ################################################qc############################################
 
 ## trim adaptor and filter low quality reads 
-n=1
-n_sample=`echo ${sample_prefix_list} | wc -w`
 printf "***Trimming adaptor and filtering low quality reads (${type_of_lib} mode)...***\n"
+n=1
 for sample_prefix in ${sample_prefix_list}
 do
     sampleID=`basename ${sample_prefix}`
     printf "***Processing: ${sampleID} (${n}/${n_sample})***\n"
-    if [ ${type_of_lib} == "SE" ]; then
-        trimmomatic ${type_of_lib} -threads ${thread} -phred33 -trimlog ${out_dir_fastq_trimmed}/${sampleID}.trimmomatic.log \
+    if [ "${type_of_lib}" == "SE" ]; then
+        ${trimmomatic} ${type_of_lib} -threads ${thread} -phred33 -trimlog ${out_dir_fastq_trimmed}/${sampleID}.trimmomatic.log \
         ${sample_prefix}.fastq.gz ${out_dir_fastq_trimmed}/${sampleID}.trimmed.fastq.gz \
         ILLUMINACLIP:${adaptor_dir}/TruSeq3-${type_of_lib}.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50 || exit 1
     else
-        trimmomatic ${type_of_lib} -threads ${thread} -phred33 -trimlog ${out_dir_fastq_trimmed}/${sampleID}.trimmomatic.log \
+        ${trimmomatic} ${type_of_lib} -threads ${thread} -phred33 -trimlog ${out_dir_fastq_trimmed}/${sampleID}.trimmomatic.log \
         ${sample_prefix}_1.fastq.gz ${sample_prefix}_2.fastq.gz \
         ${out_dir_fastq_trimmed}/${sampleID}_1.trimmed.fastq.gz ${out_dir_fastq_trimmed}/${sampleID}_1.abandoned.fastq.gz \
         ${out_dir_fastq_trimmed}/${sampleID}_2.trimmed.fastq.gz ${out_dir_fastq_trimmed}/${sampleID}_2.abandoned.fastq.gz \
@@ -265,12 +281,12 @@ printf "***trimmomatic done***\n"
 
 # fastqc
 printf "***Starting QC using Fastqc...***\n"
-time fastqc -o ${out_dir_fastqc} -t ${thread} ${fastq_dir}/*.fastq.gz && printf "***fastqc for raw fastq done***\n"
-time fastqc -o ${out_dir_fastqc} -t ${thread} ${out_dir_fastq_trimmed}/*.fastq.gz && printf "***fastqc for trimmed fastq done***\n"
+time ${fastqc} -o ${out_dir_fastqc} -t ${thread} ${fastq_dir}/*.fastq.gz && printf "***fastqc for raw fastq done***\n"
+time ${fastqc} -o ${out_dir_fastqc} -t ${thread} ${out_dir_fastq_trimmed}/*.fastq.gz && printf "***fastqc for trimmed fastq done***\n"
 
 # multiqc
 printf "***Collecting QC results using Multiqc...***\n"
-time multiqc -o ${out_dir_multiqc_fq} ${out_dir_fastqc} && printf "***multiqc done***\n"
+time ${multiqc} -o ${out_dir_multiqc_fq} ${out_dir_fastqc} && printf "***multiqc done***\n"
 
 
 ################################################batch alignment#############################################
@@ -299,15 +315,15 @@ do
 
     # alignment
     printf "***Aligning: ${i} (${count}/${n_sample}) (using trimmed fastq file to perform alignment)***\n"
-    if [ ${type_of_lib} == "SE" ]; then
-        time STAR ${fixed_parameters} \
+    if [ "${type_of_lib}" == "SE" ]; then
+        time ${STAR} ${fixed_parameters} \
              --runMode alignReads --runThreadN ${thread} \
              --genomeDir ${genome_index_dir} \
              --readFilesIn ${out_dir_fastq_trimmed}/${sampleID}.trimmed.fastq.gz \
              --readFilesCommand zcat \
              --outFileNamePrefix ${out_dir_align}/${sampleID}/${sampleID}. && printf "***Alignment done: ${sampleID}***\n"
-    elif [ ${type_of_lib} == "PE" ]; then
-        time STAR ${fixed_parameters} \
+    else
+        time ${STAR} ${fixed_parameters} \
              --runMode alignReads --runThreadN ${thread} \
              --readFilesIn ${out_dir_fastq_trimmed}/${sampleID}_1.trimmed.fastq.gz ${out_dir_fastq_trimmed}/${sampleID}_2.trimmed.fastq.gz \
              --readFilesCommand zcat \
@@ -316,25 +332,25 @@ do
     fi
 
     # bam sort 
-    time samtools sort -@ ${thread} \
+    time ${samtools} sort -@ ${thread} \
         -o ${out_dir_align}/${sampleID}/${sampleID}.Aligned.out.sorted.bam \
         -T ${out_dir_align}/${sampleID}/${sampleID} \
            ${out_dir_align}/${sampleID}/${sampleID}.Aligned.out.bam && printf "***BAM sorting done***\n"
 
     # bam index 
-    time samtools index ${out_dir_align}/${sampleID}/${sampleID}.Aligned.out.sorted.bam && printf "***BAM indexing done***\n"
+    time ${samtools} index ${out_dir_align}/${sampleID}/${sampleID}.Aligned.out.sorted.bam && printf "***BAM indexing done***\n"
 
     # format the gene count table: remove the fist 4 rows, insert sample and field information in the first line
     tail -n +5 ${out_dir_align}/${sampleID}/${sampleID}.ReadsPerGene.out.tab | \
-    sed "1 i\ensembl_id\t${sampleID}\t${sampleID}_sense\t${sampleID}_antisense" - > \
-        ${out_dir_align}/${sampleID}/${sampleID}.ReadsPerGene.out.formatted.tsv
+        sed "1 i\ensembl_id\t${sampleID}\t${sampleID}_sense\t${sampleID}_antisense" - > \
+        ${out_dir_align}/${sampleID}/${sampleID}.ReadsPerGene.out.formatted.tsv && printf "***format gene count table done***\n"
 
     count=$[ ${count} + 1 ]
 done
 
 # multiqc for STAR results
 printf "***Performing multiqc for STAR results***\n"
-time multiqc -o ${out_dir_multiqc_star} ${out_dir_align} && printf "***Multiqc for STAR done***\n"
+time ${multiqc} -o ${out_dir_multiqc_star} ${out_dir_align} && printf "***Multiqc for STAR done***\n"
 
 
 ############################################count2TPM#############################
