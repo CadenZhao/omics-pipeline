@@ -65,9 +65,10 @@ df_count <- df_count[order(df_count$ensembl_id), ]
 df <- cbind(df_annot, df_len, df_count)
 df <- df[, -c(8,10)]
 
-# compute TPM
+# compute TPM, sort coordinates (chr, start, end, then ID)
 df.tpm <- round(sapply(df[,c(9:dim(df)[2])], function(vec_count) {count2TPM(vec_count, vec_length=df$exon_length)}), 3)
 df <- cbind(df[,1:8], df.tpm)
+df <- df[with(df, order(chromosome,start,end,ensembl_id)), ]
 
 write.table(df, out.file.path, quote = F, sep = '\t', row.names = F)
 
