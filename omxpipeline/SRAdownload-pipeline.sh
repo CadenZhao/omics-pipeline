@@ -97,8 +97,8 @@ echo "All files downloaded"
 
 # compress
 printf "***Compressing***\n"
-find ${out_dir} -name "*.fastq" | xargs -n1 bgzip -@ ${thread} 
-printf "***Compress done***\n"
+find ${out_dir} -name "*.fastq" | xargs -n1 bgzip -@ ${thread} && printf "***Compress done***\n"
+
 
 printf "***Removing tmp file in: \'${out_dir}/sra\'***\n"
 rm -rf ${out_dir}/sra
