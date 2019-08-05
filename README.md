@@ -12,9 +12,9 @@ git clone https://github.com/CadenZhao/omics-pipeline.git
 cd omics-pipeline/omxpipeline
 
 # use -h flag to check the usage
-./SRAdownload-pipeline.sh -h
+./SRAdownload-pipeline.py -h
 ./bulkRNA-pipeline.sh -h
-./<pipeline name>.sh -h
+<path to pipeline> -h
 ```
 
 ## Pipeline description
@@ -27,12 +27,19 @@ requirements:
 ### 2. bulkRNA-pipeline.sh
 QC, alignment, gene count, gene TPM, BAM to BigWig
 #### Requirements:
+gMode:
 trimmomatic  
 fastqc  
 multiqc  
 STAR  
 samtools  
 R (with GenomicFeatures package) 
+
+tMode:
+trimmomatic  
+fastqc  
+multiqc  
+salmon
 
 ### 3. scRNA-pipeline.sh
 working on...
